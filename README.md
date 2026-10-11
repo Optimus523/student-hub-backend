@@ -15,6 +15,7 @@ Early development. What works today:
 - Student registration and login with securely hashed passwords
 - Announcements: create, list, read one and delete
 - Data stored in PostgreSQL, with the database settings kept in a `.env` file
+- Layered structure (models, schemas, routers) ready for growth
 
 In progress or planned:
 
@@ -38,16 +39,31 @@ In progress or planned:
 
 ## Project layout
 
-```
-backend_student_hub/
-├── main.py            # app, models, routes
-├── security.py        # password hashing and verification
-├── requirements.txt   # Python dependencies
-├── .env               # local settings (not committed)
-└── .env.example       # template for .env
-```
+    backend_student_hub/
+    ├── app/
+    │   ├── main.py            # App setup, router registration
+    │   ├── database.py        # Engine and per-request session (get_db)
+    │   ├── security.py        # Password hashing and verification
+    │   ├── models/            # SQLModel tables
+    │   │   ├── user.py
+    │   │   └── announcement.py
+    │   ├── schemas/           # Pydantic input/output models
+    │   │   ├── user.py
+    │   │   └── announcement.py
+    │   └── routers/           # Endpoint handlers, grouped by domain
+    │       ├── auth.py
+    │       └── announcements.py
+    ├── requirements.txt
+    ├── .env                   # local settings (not committed)
+    ├── .env.example           # template for .env
+    └── README.md
 
-As the project grows, the plan is to split `main.py` into routers, models, schemas and services.
+The code is layered:
+
+- **models/** define the shape of data at rest (database tables)
+- **schemas/** define the shape of data in transit (request/response)
+- **routers/** contain endpoint logic, grouped by domain
+- **database.py** owns the connection and session lifecycle
 
 ## Getting started
 
@@ -58,53 +74,39 @@ As the project grows, the plan is to split `main.py` into routers, models, schem
 
 ### 1. Clone and enter the project
 
-```
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
-```
+    git clone https://github.com/Optimus523/student-hub-backend.git
+    cd student-hub-backend
 
 ### 2. Create and activate a virtual environment
 
-```
-python3 -m venv venv
-source venv/bin/activate
-```
+    python3 -m venv venv
+    source venv/bin/activate
 
 ### 3. Install the dependencies
 
-```
-pip install -r requirements.txt
-```
+    pip install -r requirements.txt
 
 ### 4. Create the database
 
 In `psql`:
 
-```sql
-CREATE DATABASE student_hub;
-```
+    CREATE DATABASE student_hub;
 
 ### 5. Configure the environment
 
 Copy the template and edit it with your own values:
 
-```
-cp .env.example .env
-```
+    cp .env.example .env
 
 `.env` needs one line:
 
-```
-DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/student_hub
-```
+    DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/student_hub
 
 If your password contains special characters such as `@`, URL-encode them (`@` becomes `%40`). Never commit `.env`.
 
 ### 6. Run the API
 
-```
-fastapi dev main.py
-```
+    fastapi dev app/main.py
 
 The tables are created automatically on startup. Open http://127.0.0.1:8000/docs for the interactive documentation, where you can try every route.
 
@@ -112,10 +114,10 @@ The tables are created automatically on startup. Open http://127.0.0.1:8000/docs
 
 | Method | Path                  | Purpose                             |
 | ------ | --------------------- | ----------------------------------- |
-| POST   | `/users`              | Register a new user                 |
-| POST   | `/login`              | Log in with a username and password |
-| POST   | `/announcements`      | Create an announcement              |
-| GET    | `/announcements`      | List all announcements              |
+| POST   | `/users/`             | Register a new user                 |
+| POST   | `/login/`             | Log in with a username and password |
+| POST   | `/announcements/`     | Create an announcement              |
+| GET    | `/announcements/`     | List all announcements              |
 | GET    | `/announcements/{id}` | Get one announcement                |
 | DELETE | `/announcements/{id}` | Delete an announcement              |
 
@@ -133,26 +135,20 @@ Login accepts form data, the standard OAuth2 password format, which is also what
 
 Register:
 
-```
-curl -X POST http://127.0.0.1:8000/users \
-  -H "Content-Type: application/json" \
-  -d '{"username": "edwin", "password": "secret123"}'
-```
+    curl -X POST http://127.0.0.1:8000/users/ \
+      -H "Content-Type: application/json" \
+      -d '{"username": "edwin", "password": "secret123"}'
 
 Log in:
 
-```
-curl -X POST http://127.0.0.1:8000/login \
-  -d "username=edwin&password=secret123"
-```
+    curl -X POST http://127.0.0.1:8000/login/ \
+      -d "username=edwin&password=secret123"
 
 Create an announcement:
 
-```
-curl -X POST http://127.0.0.1:8000/announcements \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Exam timetable", "body": "The timetable is now on the notice board."}'
-```
+    curl -X POST http://127.0.0.1:8000/announcements/ \
+      -H "Content-Type: application/json" \
+      -d '{"title": "Exam timetable", "body": "The timetable is now on the notice board."}'
 
 ## Security notes
 
@@ -163,13 +159,14 @@ curl -X POST http://127.0.0.1:8000/announcements \
 
 ## Roadmap
 
-1. Environment-based configuration (done)
-2. Users, hashing, registration and login (done)
-3. Access tokens and a current-user dependency
-4. Protected routes and user roles
-5. Courses, enrollments, timetables and deadlines
-6. Messaging and study groups
-7. Migrations and tests
+1. Environment-based configuration ✅
+2. Users, hashing, registration and login ✅
+3. Project restructure into models / schemas / routers ✅
+4. Access tokens and a current-user dependency
+5. Protected routes and user roles
+6. Courses, enrollments, timetables and deadlines
+7. Messaging and study groups
+8. Migrations (Alembic) and automated tests
 
 ## About
 
