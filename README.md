@@ -1,173 +1,264 @@
-# Student Hub API
+# Student Hub Backend
 
-The backend for the Student Hub, a student companion app built around three pillars:
+This repository contains the backend API for the Student Hub project, a student-focused platform for academic, administrative, and social features.
 
-- **Academic:** timetables, deadlines, course materials and grades
-- **Admin:** announcements, fees and registration
-- **Social and logistics:** messaging, study groups and voice rooms
+The current implementation is a FastAPI service built with SQLModel and PostgreSQL. It already supports user registration, JWT-based login, and authenticated announcement management.
 
-It is a long-term project, built step by step and not rushed out as a minimum product. This repository holds the API, written with FastAPI and PostgreSQL.
+## Current features
 
-## Status
-
-Early development. What works today:
-
-- Student registration and login with securely hashed passwords
-- Announcements: create, list, read one and delete
-- Data stored in PostgreSQL, with the database settings kept in a `.env` file
-- Layered structure (models, schemas, routers) ready for growth
-
-In progress or planned:
-
-- Login that returns an access token (JWT)
-- Protecting the create and delete routes so only authorised users can use them
-- User roles (student, lecturer, admin)
-- Courses, enrollments, timetables and deadlines
-- Messaging and study groups
-- Database migrations with Alembic and automated tests
+- User registration
+- Username uniqueness checks
+- Password hashing with Argon2
+- JWT login and token validation
+- Protected announcement creation and deletion routes
+- Announcement listing and retrieval
+- Automatic SQLModel table creation on startup
+- CORS support for local frontend testing
 
 ## Tech stack
 
-| Part             | Choice                          |
-| ---------------- | ------------------------------- |
-| Framework        | FastAPI                         |
-| Database         | PostgreSQL                      |
-| ORM              | SQLModel (on top of SQLAlchemy) |
-| Driver           | psycopg 3                       |
-| Password hashing | pwdlib with Argon2              |
-| Settings         | python-dotenv                   |
+- Python 3.10+
+- FastAPI
+- SQLModel
+- PostgreSQL
+- psycopg
+- python-dotenv
+- pwdlib[argon2]
+- PyJWT
 
-## Project layout
+## Project structure
 
-    backend_student_hub/
-    ├── app/
-    │   ├── main.py            # App setup, router registration
-    │   ├── database.py        # Engine and per-request session (get_db)
-    │   ├── security.py        # Password hashing and verification
-    │   ├── models/            # SQLModel tables
-    │   │   ├── user.py
-    │   │   └── announcement.py
-    │   ├── schemas/           # Pydantic input/output models
-    │   │   ├── user.py
-    │   │   └── announcement.py
-    │   └── routers/           # Endpoint handlers, grouped by domain
-    │       ├── auth.py
-    │       └── announcements.py
-    ├── requirements.txt
-    ├── .env                   # local settings (not committed)
-    ├── .env.example           # template for .env
-    └── README.md
+```text
+backend_student_hub/
+├── app/
+│   ├── __init__.py
+│   ├── database.py
+│   ├── main.py
+│   ├── security.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── announcement.py
+│   │   └── user.py
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   ├── announcements.py
+│   │   └── auth.py
+│   └── schemas/
+│       ├── __init__.py
+│       ├── announcement.py
+│       └── user.py
+├── .env.example
+├── .gitignore
+├── README.md
+├── requirements.txt
+└── venv/   # local environment, excluded from Git
+```
 
-The code is layered:
+## Environment setup
 
-- **models/** define the shape of data at rest (database tables)
-- **schemas/** define the shape of data in transit (request/response)
-- **routers/** contain endpoint logic, grouped by domain
-- **database.py** owns the connection and session lifecycle
+### 1. Clone the repo
 
-## Getting started
-
-### Prerequisites
-
-- Python 3.10 or newer
-- PostgreSQL, running locally
-
-### 1. Clone and enter the project
-
-    git clone https://github.com/Optimus523/student-hub-backend.git
-    cd student-hub-backend
+```bash
+git clone <your-repo-url>
+cd backend_student_hub
+```
 
 ### 2. Create and activate a virtual environment
 
-    python3 -m venv venv
-    source venv/bin/activate
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-### 3. Install the dependencies
+### 3. Install dependencies
 
-    pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
 
-### 4. Create the database
+### 4. Create PostgreSQL database
 
-In `psql`:
+Make sure PostgreSQL is installed and running locally, then create a database:
 
-    CREATE DATABASE student_hub;
+```sql
+CREATE DATABASE student_hub;
+```
 
-### 5. Configure the environment
+### 5. Configure environment variables
 
-Copy the template and edit it with your own values:
+Copy the template and fill in your values:
 
-    cp .env.example .env
+```bash
+cp .env.example .env
+```
 
-`.env` needs one line:
+Your `.env` file should look like this:
 
-    DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/student_hub
+```env
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/student_hub
+SECRET_KEY=your-secret-key-here
+```
 
-If your password contains special characters such as `@`, URL-encode them (`@` becomes `%40`). Never commit `.env`.
+Notes:
 
-### 6. Run the API
+- Do not commit `.env`
+- Do not commit `venv/`
+- Keep `SECRET_KEY` private and unique
 
-    fastapi dev app/main.py
+## Run the app
 
-The tables are created automatically on startup. Open http://127.0.0.1:8000/docs for the interactive documentation, where you can try every route.
+You can start the server with either of these:
+
+```bash
+fastapi dev app/main.py
+```
+
+or:
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Then open:
+
+- Swagger docs: http://127.0.0.1:8000/docs
+- ReDoc: http://127.0.0.1:8000/redoc
 
 ## API overview
 
-| Method | Path                  | Purpose                             |
-| ------ | --------------------- | ----------------------------------- |
-| POST   | `/users/`             | Register a new user                 |
-| POST   | `/login/`             | Log in with a username and password |
-| POST   | `/announcements/`     | Create an announcement              |
-| GET    | `/announcements/`     | List all announcements              |
-| GET    | `/announcements/{id}` | Get one announcement                |
-| DELETE | `/announcements/{id}` | Delete an announcement              |
+### Auth routes
 
-### Registration rules
+#### Register a user
 
-- Username: 3 to 30 characters, letters, digits and underscores only. It is stored in lowercase, so `Edwin` and `edwin` are the same user.
-- Password: 8 to 128 characters.
-- A username that already exists returns `409 Conflict`.
+```http
+POST /users/
+```
 
-### Login
+Request body:
 
-Login accepts form data, the standard OAuth2 password format, which is also what the **Authorize** button in `/docs` uses. A wrong username and a wrong password return the same `401` message, so the response does not reveal which usernames exist.
+```json
+{
+    "username": "edwin",
+    "password": "secret123"
+}
+```
 
-### Example requests
+Behavior:
 
-Register:
+- username must be 3-30 characters
+- allowed characters: letters, digits, underscores
+- password must be 8-128 characters
+- duplicate usernames return `409 Conflict`
 
-    curl -X POST http://127.0.0.1:8000/users/ \
-      -H "Content-Type: application/json" \
-      -d '{"username": "edwin", "password": "secret123"}'
+#### Login
 
-Log in:
+```http
+POST /login/
+```
 
-    curl -X POST http://127.0.0.1:8000/login/ \
-      -d "username=edwin&password=secret123"
+Uses OAuth2 form data:
 
-Create an announcement:
+```text
+username=edwin&password=secret123
+```
 
-    curl -X POST http://127.0.0.1:8000/announcements/ \
-      -H "Content-Type: application/json" \
-      -d '{"title": "Exam timetable", "body": "The timetable is now on the notice board."}'
+Response:
 
-## Security notes
+```json
+{
+    "access_token": "<jwt>",
+    "token_type": "bearer"
+}
+```
 
-- Passwords are never stored. Only an Argon2 hash with a random salt is saved.
-- API responses never include the password hash, because they go through a separate output model.
-- Secrets live in `.env`, which is excluded from git.
-- At this stage the create and delete routes are open to anyone. Protecting them is the next milestone, so do not expose this version to real users.
+### Announcements routes
+
+#### Create an announcement
+
+```http
+POST /announcements/
+```
+
+Requires a valid JWT in the Authorization header.
+
+Example request body:
+
+```json
+{
+    "title": "Exam timetable",
+    "body": "The timetable is now available on the notice board."
+}
+```
+
+#### List announcements
+
+```http
+GET /announcements/
+```
+
+#### Get one announcement
+
+```http
+GET /announcements/{id}
+```
+
+#### Delete an announcement
+
+```http
+DELETE /announcements/{id}
+```
+
+Requires authentication.
+
+## Authentication and security
+
+This backend uses JWT-based authentication:
+
+- `POST /login/` issues a signed token
+- `get_current_user()` validates the token
+- protected routes require a bearer token in the `Authorization` header
+- passwords are never stored in plain text
+- Argon2 is used for password hashing
+
+Example:
+
+```http
+Authorization: Bearer <your-token>
+```
+
+## Database model summary
+
+### User
+
+- `id`: primary key
+- `username`: unique username
+- `hashed_password`: secure Argon2 hash
+
+### Announcement
+
+- `id`: primary key
+- `title`: announcement headline
+- `body`: message content
+- `author_id`: foreign key to the user who created it
+
+## Notes
+
+- SQLModel metadata is created automatically on app startup via `SQLModel.metadata.create_all(engine)`.
+- CORS is configured for local frontend development, including `127.0.0.1:5500` and private network addresses.
+- This is an active backend project and is still being expanded with more features.
 
 ## Roadmap
 
-1. Environment-based configuration ✅
-2. Users, hashing, registration and login ✅
-3. Project restructure into models / schemas / routers ✅
-4. Access tokens and a current-user dependency
-5. Protected routes and user roles
-6. Courses, enrollments, timetables and deadlines
-7. Messaging and study groups
-8. Migrations (Alembic) and automated tests
+Planned next steps include:
 
-## About
+- user roles (student, lecturer, admin)
+- course and enrollment management
+- timetables and deadlines
+- messaging and study groups
+- database migrations with Alembic
+- automated tests
+- richer permission checks and admin-only routes
 
-Built as part of a self-directed journey into software and robotics engineering.
+## License
+
+This project is currently for personal / learning / portfolio use unless otherwise stated by the project owner.
