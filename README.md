@@ -1,19 +1,40 @@
 # Student Hub Backend
 
-This repository contains the backend API for the Student Hub project, a student-focused platform for academic, administrative, and social features.
+This repository contains the backend API for the Student Hub project, a student-focused platform designed to support academic, administrative, and campus community workflows.
 
-The current implementation is a FastAPI service built with SQLModel and PostgreSQL. It already supports user registration, JWT-based login, and authenticated announcement management.
+Repository URL:
 
-## Current features
+```bash
+git clone https://github.com/Optimus523/student-hub-backend.git
+```
 
-- User registration
-- Username uniqueness checks
-- Password hashing with Argon2
-- JWT login and token validation
-- Protected announcement creation and deletion routes
-- Announcement listing and retrieval
-- Automatic SQLModel table creation on startup
-- CORS support for local frontend testing
+The backend is built with FastAPI and SQLModel, and it currently supports user authentication, announcement management, and secure database-backed storage using PostgreSQL.
+
+## Overview
+
+Student Hub is intended to become a central platform for students to access information and services such as:
+
+- academic updates and notices
+- campus announcements
+- student accounts and credentials
+- administrative communication
+- future course, timetable, and community features
+
+This repository focuses on the API layer that powers those experiences.
+
+## Current status
+
+The project is in active development, but the backend already includes the following working features:
+
+- user registration with validation
+- unique username checks
+- secure password hashing using Argon2
+- JWT-based login and token verification
+- protected announcement routes requiring authentication
+- announcement creation, viewing, and deletion
+- PostgreSQL integration through SQLModel
+- automatic table creation on application startup
+- CORS setup for local frontend testing
 
 ## Tech stack
 
@@ -29,7 +50,7 @@ The current implementation is a FastAPI service built with SQLModel and PostgreS
 ## Project structure
 
 ```text
-backend_student_hub/
+student-hub-backend/
 ├── app/
 │   ├── __init__.py
 │   ├── database.py
@@ -51,16 +72,39 @@ backend_student_hub/
 ├── .gitignore
 ├── README.md
 ├── requirements.txt
-└── venv/   # local environment, excluded from Git
+├── venv/              # local virtual environment, excluded from git
+└── .env               # local secrets, excluded from git
 ```
 
-## Environment setup
+## Architecture notes
 
-### 1. Clone the repo
+The backend is organized into clear layers:
+
+- `app/models/` defines the database tables
+- `app/schemas/` defines request and response validation models
+- `app/routers/` contains endpoint handlers grouped by feature
+- `app/database.py` manages the SQLModel engine and database session lifecycle
+- `app/security.py` handles password hashing, JWT creation, and protected-route validation
+- `app/main.py` configures the FastAPI app, CORS, and router registration
+
+This separation keeps the project easier to extend as more features are added.
+
+## Prerequisites
+
+Before running this project locally, make sure you have:
+
+- Python 3.10 or newer
+- PostgreSQL installed and running
+- a local database created for the project
+- a virtual environment tool available for Python
+
+## Local setup
+
+### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd backend_student_hub
+git clone https://github.com/Optimus523/student-hub-backend.git
+cd student-hub-backend
 ```
 
 ### 2. Create and activate a virtual environment
@@ -76,9 +120,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Create PostgreSQL database
+### 4. Create the PostgreSQL database
 
-Make sure PostgreSQL is installed and running locally, then create a database:
+Open PostgreSQL and create a database such as:
 
 ```sql
 CREATE DATABASE student_hub;
@@ -86,13 +130,13 @@ CREATE DATABASE student_hub;
 
 ### 5. Configure environment variables
 
-Copy the template and fill in your values:
+Create a local `.env` file from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-Your `.env` file should look like this:
+Then set your values in `.env`:
 
 ```env
 DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/student_hub
@@ -101,40 +145,41 @@ SECRET_KEY=your-secret-key-here
 
 Notes:
 
-- Do not commit `.env`
-- Do not commit `venv/`
-- Keep `SECRET_KEY` private and unique
+- Never commit `.env`
+- Never commit `venv/`
+- Use a strong random value for `SECRET_KEY`
+- If your database password contains special characters, URL-encode them correctly
 
-## Run the app
+## Running the app
 
-You can start the server with either of these:
+Start the API with:
 
 ```bash
 fastapi dev app/main.py
 ```
 
-or:
+Or run with uvicorn directly:
 
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Then open:
+Then open the docs in your browser:
 
-- Swagger docs: http://127.0.0.1:8000/docs
+- Swagger UI: http://127.0.0.1:8000/docs
 - ReDoc: http://127.0.0.1:8000/redoc
 
 ## API overview
 
-### Auth routes
+### Authentication endpoints
 
-#### Register a user
+#### Register user
 
 ```http
 POST /users/
 ```
 
-Request body:
+Example request body:
 
 ```json
 {
@@ -143,11 +188,11 @@ Request body:
 }
 ```
 
-Behavior:
+Rules:
 
-- username must be 3-30 characters
-- allowed characters: letters, digits, underscores
-- password must be 8-128 characters
+- username must be between 3 and 30 characters
+- username may only contain letters, numbers, and underscores
+- password must be between 8 and 128 characters
 - duplicate usernames return `409 Conflict`
 
 #### Login
@@ -156,109 +201,122 @@ Behavior:
 POST /login/
 ```
 
-Uses OAuth2 form data:
+This endpoint accepts OAuth2 password form data:
 
 ```text
 username=edwin&password=secret123
 ```
 
-Response:
+Example response:
 
 ```json
 {
-    "access_token": "<jwt>",
+    "access_token": "<jwt-token>",
     "token_type": "bearer"
 }
 ```
 
-### Announcements routes
+### Announcement endpoints
 
-#### Create an announcement
+#### Create announcement
 
 ```http
 POST /announcements/
 ```
 
-Requires a valid JWT in the Authorization header.
+Requires a valid JWT token in the `Authorization` header.
 
 Example request body:
 
 ```json
 {
     "title": "Exam timetable",
-    "body": "The timetable is now available on the notice board."
+    "body": "The exam timetable is now available on the notice board."
 }
 ```
 
-#### List announcements
+#### Get all announcements
 
 ```http
 GET /announcements/
 ```
 
-#### Get one announcement
+#### Get single announcement
 
 ```http
 GET /announcements/{id}
 ```
 
-#### Delete an announcement
+#### Delete announcement
 
 ```http
 DELETE /announcements/{id}
 ```
 
-Requires authentication.
+Requires authentication and ownership/auth validation through the current user dependency.
 
 ## Authentication and security
 
-This backend uses JWT-based authentication:
+This backend uses JWT-based authentication to protect sensitive routes.
 
-- `POST /login/` issues a signed token
-- `get_current_user()` validates the token
-- protected routes require a bearer token in the `Authorization` header
-- passwords are never stored in plain text
-- Argon2 is used for password hashing
+Current security features include:
 
-Example:
+- password hashing with Argon2
+- storage of only hashed passwords
+- token generation on successful login
+- token validation through a dependency
+- restricted access to announcement creation and deletion routes
+
+Example header:
 
 ```http
 Authorization: Bearer <your-token>
 ```
 
-## Database model summary
+## Database models
 
-### User
+### User model
 
-- `id`: primary key
-- `username`: unique username
-- `hashed_password`: secure Argon2 hash
-
-### Announcement
+Fields:
 
 - `id`: primary key
-- `title`: announcement headline
-- `body`: message content
-- `author_id`: foreign key to the user who created it
+- `username`: unique login name
+- `hashed_password`: securely hashed user password
+
+### Announcement model
+
+Fields:
+
+- `id`: primary key
+- `title`: short headline or title
+- `body`: content of the announcement
+- `author_id`: foreign key linking the announcement to the author user
 
 ## Notes
 
-- SQLModel metadata is created automatically on app startup via `SQLModel.metadata.create_all(engine)`.
-- CORS is configured for local frontend development, including `127.0.0.1:5500` and private network addresses.
-- This is an active backend project and is still being expanded with more features.
+- SQLModel metadata is created automatically on startup via `SQLModel.metadata.create_all(engine)`.
+- CORS is configured for local frontend testing, including `127.0.0.1:5500` and private-network addresses.
+- The app is actively evolving and is intended to grow into a broader student platform.
 
 ## Roadmap
 
-Planned next steps include:
+Planned future improvements include:
 
-- user roles (student, lecturer, admin)
+- role-based access control
+- student, admin, and lecturer roles
 - course and enrollment management
 - timetables and deadlines
 - messaging and study groups
 - database migrations with Alembic
-- automated tests
-- richer permission checks and admin-only routes
+- unit/integration tests
+- more refined permission checks and admin-only routes
 
 ## License
 
-This project is currently for personal / learning / portfolio use unless otherwise stated by the project owner.
+This project is currently intended for personal, learning, and portfolio use unless otherwise specified by the project owner.
+
+## Contributing
+
+This repo is still under active development, so contributions are welcome if the project direction and implementation approach align with the goals of the platform.
+
+If you are working on the project locally, make sure to keep your `.env` and `venv/` out of version control and push only the application code, configuration templates, and documentation.
