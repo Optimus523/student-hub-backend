@@ -141,6 +141,8 @@ Then set your values in `.env`:
 ```env
 DATABASE_URL=postgresql+psycopg://USER:PASSWORD@localhost:5432/student_hub
 SECRET_KEY=your-secret-key-here
+
+> Security notice: This repository should never contain real secrets. `.env` is ignored by `.gitignore` and should not be committed. If you accidentally committed secrets, rotate them immediately.
 ```
 
 Notes:

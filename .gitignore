@@ -1,3 +1,17 @@
+# Python related
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+venv/
+
+# dotenv secrets
+.env
+
+# Editor files
+.vscode/
+*.swp
 .env.env
 venv/
 __pycache__/
