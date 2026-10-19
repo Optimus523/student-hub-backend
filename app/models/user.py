@@ -14,3 +14,4 @@ class User(SQLModel, table=True):
 
     # Store only the hashed password, never the plain-text password.
     hashed_password: str
+    avatar_url: str | None = Field(default=None)

@@ -25,8 +25,23 @@ def create_announcement(data: AnnouncementIn, db: Session = Depends(get_db), use
 
 @router.get("/announcements/")
 def list_announcements(db: Session = Depends(get_db)):
-    """Return all stored announcements in the database."""
-    return db.exec(select(Announcement)).all()
+    """Return all stored announcements, including the author's username."""
+    # Join the Announcement table with the User table to get the username
+    statement = select(Announcement, User.username).join(User, Announcement.author_id == User.id)
+    results = db.exec(statement).all()
+    
+    # Format it into a clean list of dictionaries
+    return [
+        {
+            "id": ann.id,
+            "title": ann.title,
+            "body": ann.body,
+            "author_id": ann.author_id,
+            "author_username": username,  # <-- New!
+            "created_at": ann.created_at, # <-- New!
+        }
+        for ann, username in results
+    ]
 
 
 @router.get("/announcements/{id}")

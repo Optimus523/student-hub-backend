@@ -49,4 +49,4 @@ def login(
 
     # Issue a token after successful authentication.
     token = create_token(user.username)
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "user_id" : user.id, "username" : user.username}
